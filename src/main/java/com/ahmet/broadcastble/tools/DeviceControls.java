@@ -37,7 +37,7 @@ public class DeviceControls {
     }
 
     /**
-     * cihazda uygulama için gerekli ayarlamaları kontrol eder
+     *  uygulama için cihazda gerekli ayarlamaları kontrol eder
      */
     public static boolean checkSetting(
             Activity activity,
