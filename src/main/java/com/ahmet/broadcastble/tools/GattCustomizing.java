@@ -10,10 +10,9 @@ public class GattCustomizing {
     /**
      * Yeni bir bluetooth servisi oluşturur
      * @param uuid Servis uuid si
-     * @param serviceType Örneğin: BluetoothGattService.SERVICE_TYPE_PRIMARY
      */
-    public static BluetoothGattService createService(UUID uuid, int serviceType) {
-        return new BluetoothGattService(uuid, serviceType);
+    public static BluetoothGattService createService(UUID uuid) {
+        return new BluetoothGattService(uuid, BluetoothGattService.SERVICE_TYPE_PRIMARY);
     }
 
     /**

@@ -15,20 +15,27 @@ import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.BluetoothLeAdvertiser;
 import android.content.Context;
+import android.os.Handler;
 import android.os.ParcelUuid;
+import android.util.Log;
 
+import com.ahmet.broadcastble.BroadcastBLE;
 import com.ahmet.broadcastble.enums.BleBroadcastErrors;
 import com.ahmet.broadcastble.listener.BroadcastBleCallback;
 import com.ahmet.broadcastble.listener.BroadcastBleErrorCallback;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class Executer {
     /**
      * Arayüz aktivitesi
      */
     private final Activity activity;
+
+    private ParcelUuid deviceUUID;
+
     /**
      * bluetooth servis listesi
      */
@@ -47,11 +54,10 @@ public class Executer {
     private BluetoothGattServer bluetoothGattServer;
 
     /**
-     *
-     * @param activity Arayüz aktivitesi
-     * @param services Servis listesi
+     * @param activity             Arayüz aktivitesi
+     * @param services             Servis listesi
      * @param broadcastBleCallback ble durum izleme methodu
-     * @param errorCallback ble hatalarını yakalama methodu
+     * @param errorCallback        ble hatalarını yakalama methodu
      */
     public Executer(
             Activity activity,
@@ -64,10 +70,19 @@ public class Executer {
         this.broadcastBleErrorCallback = errorCallback;
     }
 
+    public void setDeviceUUID(String uuid) {
+        this.deviceUUID = ParcelUuid.fromString(uuid);
+    }
+
     /**
      * BLE yayınını başlatır
      */
     public void startGattServer() {
+
+        if (deviceUUID==null){
+            broadcastBleErrorCallback.onBroadcastError(BleBroadcastErrors.UNDEFINED_DEVICE_UUID);
+            return;
+        }
 
         BluetoothManager manager = (BluetoothManager) activity.getSystemService(Context.BLUETOOTH_SERVICE);
         BluetoothAdapter adapter = manager.getAdapter();
@@ -87,25 +102,39 @@ public class Executer {
         AdvertiseData.Builder advertiseData = new AdvertiseData.Builder();
         advertiseData.setIncludeDeviceName(true);
         advertiseData.setIncludeTxPowerLevel(true);
+        advertiseData.addServiceUuid(deviceUUID);
 
 
+        Log.d(BroadcastBLE.TAG, "startAdvertising çalıştı");
+
+        try {
+
+
+            bluetoothLeAdvertiser.startAdvertising(advertiseSettings.build(), advertiseData.build(), advertiseCallback);
+
+            addServices();
+
+
+        } catch (Exception e) {
+            broadcastBleErrorCallback.onBroadcastError(BleBroadcastErrors.BROADCAST_NOT_STARTED);
+            Log.e(BroadcastBLE.TAG, "startAdvertising: " + e);
+        }
+
+    }
+
+    private void addServices() {
         for (Map.Entry<BluetoothGattService, List<BluetoothGattCharacteristic>> serviceListEntry : services.entrySet()) {
+
             BluetoothGattService service = serviceListEntry.getKey();
             for (BluetoothGattCharacteristic c : serviceListEntry.getValue()) {
                 service.addCharacteristic(c);
             }
             bluetoothGattServer.addService(service);
-            advertiseData.addServiceUuid(new ParcelUuid(service.getUuid()));
+
+            services.remove(service);
+            break;
+
         }
-
-
-        try {
-            bluetoothLeAdvertiser.startAdvertising(advertiseSettings.build(), advertiseData.build(), advertiseCallback);
-        } catch (Exception e) {
-
-            broadcastBleErrorCallback.onBroadcastError(BleBroadcastErrors.ADVERTISING_NOT_STARTED);
-        }
-
     }
 
     /**
@@ -120,9 +149,12 @@ public class Executer {
 
 
     private final AdvertiseCallback advertiseCallback = new AdvertiseCallback() {
+
+
         @Override
         public void onStartSuccess(AdvertiseSettings settingsInEffect) {
             broadcastBleCallback.onBroadcast(true);
+
             super.onStartSuccess(settingsInEffect);
 
         }
@@ -130,12 +162,22 @@ public class Executer {
         @Override
         public void onStartFailure(int errorCode) {
             broadcastBleCallback.onBroadcast(false);
+
             super.onStartFailure(errorCode);
         }
     };
 
     private final BluetoothGattServerCallback bluetoothGattServerCallback = new BluetoothGattServerCallback() {
 
+        @Override
+        public void onServiceAdded(int status, BluetoothGattService service) {
+
+            Log.d(BroadcastBLE.TAG, "added service " + service.getUuid());
+
+            if (!services.isEmpty()) addServices();
+
+            super.onServiceAdded(status, service);
+        }
 
         @Override
         public void onCharacteristicWriteRequest(

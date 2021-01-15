@@ -23,6 +23,10 @@ implementation project(path: ':BroadcastBLE')
     UUID UUID_CUSTOMER_INFO = UUID.fromString("addc4be8-7a4c-4fa7-80b1-f6b69fecf81e");
     UUID UUID_API = UUID.fromString("86f774ee-31b7-40c2-adb0-bfbb0550626f");
     UUID UUID_USERRESPONSE = UUID.fromString("0c5ce913-5432-440d-8acd-4e301006682d");
+
+    // for dynamic Hex value
+    Map<UUID, String> uuidCharacteristicValueApiUrl = new HashMap<>();
+
 ```
 
 #### Prepare Method
@@ -34,16 +38,31 @@ implementation project(path: ':BroadcastBLE')
                 errorCallback,
                 bleCallback);
 
-        BluetoothGattService service = GattCustomizing.createService(UUID_SERVICE,
-                BluetoothGattService.SERVICE_TYPE_PRIMARY);
-
+        // CUSTOM SERVICE #1
+        BluetoothGattService service = GattCustomizing.createService(UUID_SERVICE);
         List<BluetoothGattCharacteristic> characteristicList = Arrays.asList(
                 GattCustomizing.createCharacteristicRead(UUID_CUSTOMER_INFO),
                 GattCustomizing.createCharacteristicRead(UUID_API),
                 GattCustomizing.createCharacteristicWrite(UUID_USERRESPONSE)
         );
-        broadcastBLE.removeAllService();
-        broadcastBLE.addService(service, characteristicList);
+        broadcastBLE.addService(service,characteristicList);
+
+        // CUSTOM SERVICE #2
+        // string -> hex -> split(fixed size 16) -> list
+        BluetoothGattService serviceDynamic = GattCustomizing.createService(
+            UUID.fromString("22e7ac41-88ab-4ff7-b4e9-5b9d7c2dd257"))
+        List<String> apiUrlHexList = stringToHexArray(apiUrl);
+        List<BluetoothGattCharacteristic> characteristicApiUrl = new ArrayList<>();
+        for (int i = 0; i < apiUrlHexList.size(); i++) {
+            UUID uuid = UUID.randomUUID();
+            String characteristicValue = (i > 10 ? "" : "0") + i + apiUrlHexList.get(i);
+            uuidCharacteristicValueApiUrl.put(uuid, characteristicValue);
+            characteristicApiUrl.add(GattCustomizing.createCharacteristicRead(uuid));
+        }
+        broadcastBLE.addService(serviceDynamic, characteristicApiUrl);
+        
+        // for scan filter (required)
+        broadcastBLE.setDeviceUUID("99999999-8888-7777-6666-555555555555");
         broadcastBLE.start();
     }
 ```
@@ -82,6 +101,17 @@ implementation project(path: ':BroadcastBLE')
                 return apiUrl.getBytes();
             } else if (uuid.toString().equals(UUID_CUSTOMER_INFO.toString())) {
                 return customerId.getBytes();
+            }else{
+                // dynamic uuid read
+                if (uuidCharacteristicValueApiUrl.containsKey(uuid)) {
+                    Log.d(BroadcastBLE.TAG, "detect dynamic uuid");
+                    String data = uuidCharacteristicValueApiUrl.get(uuid);
+                    if (data == null)
+                        Log.d(BroadcastBLE.TAG, "null data");
+                    else
+                        return data.getBytes();
+                        
+                }
             }
             return null;
         }

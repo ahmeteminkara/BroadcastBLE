@@ -14,6 +14,7 @@ import com.ahmet.broadcastble.tools.Executer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 
 final public class BroadcastBLE extends Executer {
