@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.util.Log;
 
 import com.ahmet.broadcastble.BroadcastBLE;
 import com.ahmet.broadcastble.enums.BleDeviceErrors;
@@ -53,10 +54,16 @@ public class DeviceControls {
             errorCallback.onDeviceError(BleDeviceErrors.UNSUPPORT_BLUETOOTH_LE);
             return false;
         }
+
+        /*
         if (!DeviceControls.isSupportAdvertisement()) {
+
             errorCallback.onDeviceError(BleDeviceErrors.UNSUPPORT_BLE_ADVERTISER);
             return false;
         }
+
+         */
+
         return true;
     }
 }

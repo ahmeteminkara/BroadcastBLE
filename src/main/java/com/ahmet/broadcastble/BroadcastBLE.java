@@ -39,7 +39,7 @@ final public class BroadcastBLE extends Executer {
     /**
      * Yayınlanacak servis ve servise bağlı hizmetlerin listesi
      */
-    private static final Map<BluetoothGattService, List<BluetoothGattCharacteristic>> services = new HashMap<>();
+    public static final Map<BluetoothGattService, List<BluetoothGattCharacteristic>> services = new HashMap<>();
 
     /**
      * @param activity      [...Activity.this] şeklinde belirtilmesi lazım
