@@ -25,6 +25,7 @@ import com.ahmet.broadcastble.listener.BroadcastBleErrorCallback;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class Executer {
     /**
@@ -47,6 +48,10 @@ public class Executer {
         public void onStartSuccess(AdvertiseSettings settingsInEffect) {
             broadcastBleCallback.onBroadcast(true);
             Log.e(BroadcastBLE.TAG, "onStartSuccess");
+
+            Log.e(BroadcastBLE.TAG, "getMode: " + settingsInEffect.getMode());
+            Log.e(BroadcastBLE.TAG, "isConnectable: " + settingsInEffect.isConnectable());
+            Log.e(BroadcastBLE.TAG, "getTxPowerLevel: " + settingsInEffect.getTxPowerLevel());
         }
 
         @Override
@@ -172,7 +177,7 @@ public class Executer {
     }
 
     public void setDeviceUUID(String uuid) {
-        this.deviceUUID = ParcelUuid.fromString(uuid);
+        this.deviceUUID = new ParcelUuid(UUID.fromString(uuid));
     }
 
     /**
@@ -192,11 +197,6 @@ public class Executer {
         bluetoothGattServer = manager.openGattServer(activity, bluetoothGattServerCallback);
 
 
-            Log.e("VAROLANSERVICE","Service size: "+bluetoothGattServer.getServices().size());
-        for (BluetoothGattService service : bluetoothGattServer.getServices()) {
-            Log.e("VAROLANSERVICE",service.getUuid().toString());
-        }
-
         AdvertiseSettings.Builder advertiseSettings = new AdvertiseSettings.Builder();
 
         advertiseSettings.setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY);
@@ -213,24 +213,18 @@ public class Executer {
 
 
         try {
-            if (isActive) {
-                bluetoothLeAdvertiser.stopAdvertising(advertiseCallback);
-                isActive = false;
-            }
+            bluetoothLeAdvertiser.stopAdvertising(advertiseCallback);
         } catch (Exception e) {
             Log.e(BroadcastBLE.TAG, "stopAdvertising: " + e);
         }
 
         try {
 
-            if (!isActive) {
-                bluetoothLeAdvertiser.startAdvertising(advertiseSettings.build(), advertiseData.build(), advertiseCallback);
-                isActive = true;
-                addServices();
+            bluetoothLeAdvertiser.startAdvertising(advertiseSettings.build(), advertiseData.build(), advertiseCallback);
+            isActive = true;
+            addServices();
 
-                Log.e(BroadcastBLE.TAG, "TRY içi çalıştı");
-
-            }
+            Log.e(BroadcastBLE.TAG, "TRY içi çalıştı");
 
         } catch (Exception e) {
             broadcastBleCallback.onBroadcast(false);
